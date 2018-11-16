@@ -1,0 +1,671 @@
+﻿
+ SELECT  t1.bank_code,t1.weight,
+        t2.name,t2.code,t2.description,
+        (t2.enable*t1.enable) `enable`
+        FROM
+        yhb_pay_router_bank_service t1
+        LEFT JOIN
+        yhb_pay_org_service t2
+        ON t2.code=t1.service_code
+        LEFT JOIN
+        yhb_pay_org t4
+        ON t4.code=t2.org_code
+        WHERE t1.weight > 0
+        AND t1.enable*t2.enable=1
+        AND t1.service_type='REPAY'
+        AND t2.service_type='REPAY'
+        AND t1.bank_code='CCB'
+        AND t2.merchant_id=3
+        AND t2.deduct_type=2;    查询某个银行支持的扣款渠道及权重
+
+
+
+
+select DATE(repay_date) ,count(if(status=1 and type='0',true,null))/count(if(type='0',true,null)) from miaobt_user_repay_record where repay_date >'2018-11-01' group by DATE(repay_date) ;
+
+
+
+update miaobt_finance.miaobt_borrow set amount = amount * 2, loan_amount = loan_amount * 2, fee = fee * 2  where nid = '201810150000008275';
+update miaobt_finance.miaobt_loan_contract set loan_amount = loan_amount * 2, capital = capital* 2, cur_remain_capital = cur_remain_capital * 2, cur_remain_interest = cur_remain_interest * 2 where nid = '201810150000008275';
+update miaobt_finance.miaobt_loan_repay_plan set repay_amount = repay_amount * 2, capital = capital * 2, interest = interest * 2, remain_capital_amount = remain_capital_amount * 2  WHERE account_id = (SELECT id FROM miaobt_finance.miaobt_loan_contract WHERE nid = '201810150000008275');
+update  miaobt_finance.miaobt_loan_repay_plan_fee f, miaobt_finance.miaobt_loan_repay_plan p, miaobt_finance.miaobt_loan_contract c  set f.amount = f.amount * 2  WHERE p.account_id = c.id and p.id = f.plan_id  and c. nid = '201810150000008275';
+update miaobt_finance.miaobt_loan_period_repay set receive_amount_sum = receive_amount_sum * 2, cur_receive_amount = cur_receive_amount * 2 WHERE account_id = (SELECT id FROM miaobt_finance.miaobt_loan_contract WHERE nid = '201810150000008275');
+update miaobt_finance.miaobt_loan_period_dtl d, miaobt_finance.miaobt_loan_period_repay r ,miaobt_finance.miaobt_loan_contract c set d.receive_amount_sum = d.receive_amount_sum * 2, d.cur_receive_amount = d.cur_receive_amount * 2  WHERE r.id = d.period_main_id and r.account_id = c.id and c.nid = '201810150000008275';
+
+
+
+
+curl -i 'http://localhost:8080/yhb/api/1.0.0/push/dfOrderQuery?billNo=YXB20181105104908915442607'  -H 'content-uid:1' -H 'content-pwkey:1'
+
+
+
+
+curl -i  'http://localhost:8080/yhb/api/1.0.0/push/dfOrderQuery?billNo=YXB201811101129278991067368&sendMq=1'  -H 'content-uid:1' -H 'content-pwkey:1'
+
+/**查询代收/
+
+curl -i  'http://172.31.45.62:8080/yhb/api/1.0.0/pay/repayOrderQuery?billNo=YXB20181105104908915442607&sendMq=1'  -H 'content-uid:1' -H 'content-pwkey:1'
+/查询代付/ 
+
+curl -i 'http://172.31.45.58:8080/yhb/api/1.0.0/pay/dfOrderQuery?billNo=YXB201810281510269541888570&sendMq=1' -H 'content-uid:1' -H 'content-pwkey:1'
+
+易宝的查询接口
+
+curl -i  'http://10.0.0.148:8089/yhb/api/1.0.0/yeepay/repayOrderQuery?billNo=repay201810150000004'        
+
+
+
+//计算易花宝绑卡认证费的总金额
+
+select sum(amount) from yhb_auth_pay_record where status=1 and  FROM_UNIXTIME(add_time/1000,'%Y%m%d')>='20181001' and FROM_UNIXTIME(add_time/1000,'%Y%m%d')<='20181025';
+
+
+//放款成功改为代付失败
+
+DELETE FROM miaobt_finance.`miaobt_loan_acc_define_fee` WHERE account_id = (SELECT id FROM miaobt_finance.miaobt_loan_contract WHERE nid='201711290007184592');
+DELETE FROM miaobt_finance.`miaobt_loan_repay_plan_fee` WHERE plan_id = (SELECT id FROM miaobt_finance.`miaobt_loan_repay_plan` WHERE account_id IN (SELECT id FROM miaobt_finance.miaobt_loan_contract WHERE nid='201711290007184592'));
+DELETE FROM miaobt_finance.`miaobt_loan_period_dtl` WHERE period_main_id = (SELECT id FROM miaobt_finance.`miaobt_loan_period_repay` WHERE account_id IN (SELECT id FROM miaobt_finance.miaobt_loan_contract WHERE nid='201711290007184592'));
+DELETE FROM miaobt_finance.`miaobt_loan_repay_plan` WHERE account_id = (SELECT id FROM miaobt_finance.miaobt_loan_contract WHERE nid='201711290007184592');
+DELETE FROM miaobt_finance.`miaobt_loan_period_repay` WHERE account_id = (SELECT id FROM miaobt_finance.miaobt_loan_contract WHERE nid='201711290007184592');
+DELETE FROM miaobt_finance.`miaobt_loan_contract` WHERE nid='201711290007184592';
+UPDATE miaobt_finance.miaobt_borrow_df SET STATUS=2,resp_msg='口袋于20181016确认提现失败，故由放款成功改为代付失败' WHERE nid='201809230011403451' AND STATUS=1 and service_code ='KOUDAI000001';
+update miaobt_finance.miaobt_borrow set status=7 where nid='201711290007184592';
+
+miaobt_borrow 
+miaobt_borrow_queue
+miaobt_employee_borrow_in_log
+miaobt_employee_borrow_out_log
+miaobt_collection_amount_record
+miaobt_borrow_assign_log
+
+
+//易花宝补发还款通知
+
+select concat("curl -i 'http://172.31.45.62:8080/yhb/api/2.0.0/flow/repayStatusFeedback'  -d 'merchantId=",b.merchant_id,"&acceptStatus=1&transStatus=1&nid=",b.nid,"&transTime=",UNIX_TIMESTAMP(c.repay_date),"' -H 'content-uid:1' -H 'content-pwkey:1'" ) as tt from yhb_outflow_order a,yhb_finance_borrow b ,yhb_user_repay_record c where  a.nid=b.nid and  c.nid=b.nid and   b.status=11  and a.outflow_nid ='201809121522308786534465'; 
+
+
+//秒白条口袋查询接口
+
+ 
+curl -i 'http://172.31.45.62:8080/pay/api/1.0.0/koudailc/dfOrderQuery?billNo=201811051631323521319062&sendMq=1' 
+
+curl -i 'http://app-009:8080/pay/api/1.0.0/koudailc/dfOrderQuery?billNo=201811051631323521319062&sendMq=1'
+
+//拉数据
+
+mysql -hmysql-002 -udev_leader -p miaobt_operation -e "select phone from miaobt_checkcc_phone where type=1 and query_date='20180906'" > /tmp/20180828-移动.csv
+mysql -hmysql-002 -udev_leader -p miaobt_operation -e "select phone from miaobt_checkcc_phone where type=2 and query_date='20180906'" > /tmp/20180828-联通.csv
+mysql -hmysql-002 -udev_leader -p miaobt_operation -e "select phone from miaobt_checkcc_phone where type=3 and query_date='20180906'" > /tmp/20180828-电信.csv
+
+
+
+
+miaobt_operation :
+
+select * from miaobt_sms_lable where name='201802注册用户-电信(条数）';
+
+select phone from miaobt_sms_lable_user where lable_id=1367;
+
+
+//拉黑
+insert  into  yhb_all.yhb_blacklist_apply  (nid,merchant_id,name,phone,id_card,apply_user_name,apply_user_id,apply_reason,audit_user_id,audit_user_name,status,type)  values  ('201811010002157841','2','李飞','13215573802','342222198708022017','zhuyan','18','用户自己要求','14','zhangbing','1','1');
+
+
+//易花宝推送日志
+
+INSERT INTO `yhb_borrow_aicuishou_log` (`user_id`, `nid`, `request_text`, `status`, `operate_type`, `response_text`, `third_response_text`, `trans_no`, `add_time`, `update_time`, `add_user`, `update_user`) 
+VALUES(NULL,'201810070001827647',NULL,'2','REPAY','',NULL,NULL,'1540277100000','1540277100000','1','1');
+
+
+UPDATE yhb_borrow_aicuishou_log SET request_text = 
+'{"caseCode":"Y201810070001827647","debtCode":"YXB201810231516028632476285","debtMoney":1027.00,"repayMoney":"1027.00","repayTime":"1540277100000","settleState":"1"}'
+WHERE nid = '201810070001827647' AND operate_type = 'REPAY';
+
+
+                  
+split -l 150000 --verbose 0926_敬众_api离线-移动-457675.txt -d -a 1 0926_敬众_api离线-移动-_>&1 | awk -F"[\`']" '{print "mv "$2" "$2".csv"}' | bash
+这个命令你可以看一下，只需替换其中的文件名就可以啦
+
+
+
+现金白卡拒绝
+curl -i http://app-008:9200/hub/api/1.0.0/xjcard/approveFeedback -d'approve_status=403&order_sn=180925118654&approve_remark=客户要求取消'
+
+//现金白卡没nid 取消订单处理过程 
+
+curl -i http://app-008:9200/hub/api/1.0.0/xjcard/approveFeedback -d'approve_status=403&order_sn=180717006893&approve_remark=客户要求取消'
+
+miaot_approve.miaobt_borrow  statu=2  的时候
+
+curl -i http://app-008:9200/hub/api/1.0.0/xjcard/loanFeedback -d'fail_reason=用户要求拒绝&lending_status=401&nid=201810150011802360';
+
+miaot_approve.miaobt_borrow    status=0  用户等待购买信用报告
+
+curl -i http://app-008:9200/hub/api/1.0.0/outflow/cancelApply -d'remark=客户取消借款&refuseUserId=11&nid=201810190011876065'
+
+
+
+select biz_no,phone,name,id_card,card_no,card_bank_name,amount,pay_amount from miaobt_hub.miaobt_outflow_order where  biz_no ='20180720182658754994296'; 
+
+易花宝  ：
+
+//易花宝加白名单
+
+insert into `yhb_white_list_mobile` (`mobile`, `source`, `level`, `remark`, `enabled`, `add_time`, `add_user`, `update_time`, `update_user`) values('18817382570','mt','3','','1','0','0','0','0');
+
+//易花宝还款通知
+curl -i  'http://172.31.45.62:8080/yhb/api/2.0.0/flow/repayStatusFeedback'  -d'merchantId=2&acceptStatus=1&transStatus=1&nid=201810070001827647&transTime=1540277100000' -H 'content-uid:1' -H 'content-pwkey:1'	  
+	  
+
+//推送还款记录
+
+curl -i 'https://api.yihuabao.cn/yhb/api/2.0.0/aicuishou/reAicuishouRepayNotify' -d 'nid=201810070001827647' -H 'content-uid:1' -H 'content-pwkey:1'
+
+//推新单
+
+curl -i 'https://api.yihuabao.cn/yhb/api/2.0.0/aicuishou/pushBorrowsToAicuishou' -d 'pushNewFlag=1&nid=201805240000345206' -H 'content-uid:1' -H 'content-pwkey:1'
+
+//更新
+
+curl -i 'https://api.yihuabao.cn/yhb/api/2.0.0/aicuishou/pushBorrowsToAicuishou' -d 'pushUpdateFlag=1&nid=201810070001827647' -H 'content-uid:1' -H 'content-pwkey:1'
+
+
+select t.*,from_unixtime(add_time/1000) as time from yhb_borrow_aicuishou_log t where nid='201810070001827647' and operate_type = 'REPAY';
+
+
+易X宝代付处理中置为失败或成功（transTime替换为df表的addTime）
+
+curl  -H"Content-uid:1" -H"Content-pwkey:1" "http://172.31.45.58:8080/yhb/api/1.0.0/finance/dfCallBackQueueConsumer" -d "merchantId=3&msg=20180712经财务核查，贝米无此订单，故置为失败&serviceCode=CHANGPAY000001&transStatus=2&acceptStatus=1&billNo=YXB201807162100364229475397&transTime=1531720800000"
+
+curl -i -H"Content-uid:1" -H"Content-pwkey:1" "http://172.31.45.58:8080/yhb/api/1.0.0/finance/dfCallBackQueueConsumer" -d "merchantId=3&msg=20181112咨询无记录&serviceCode=CHANGPAY000005&transStatus=2&acceptStatus=1&billNo=YXB201811071047565893530555&transTime=1541558876589"
+
+易X宝代扣处理中置为失败或成功
+
+curl  -H"Content-uid:1" -H"Content-pwkey:1" "https://api.yihuabao.cn/yhb/api/1.0.0/finance/payCallBackQueueConsumer" -d "merchantId=2&billNo=YXB20181031164526666887530&acceptStatus=1&amount=2000&msg=20181012核实无记录&transId=201810100001892537&cardNo=6222023602064138977&transStatus=2&transTime=1540975526000"
+
+curl  -H"Content-uid:1" -H"Content-pwkey:1" "https://api.yihuabao.cn/yhb/api/1.0.0/finance/payCallBackQueueConsumer" -d "merchantId=2&billNo=YXB201810310808413592772226&acceptStatus=1&amount=2250.00&msg=2018105核实是成功&transId=201810100001898641&cardNo=6212262003009343478&transStatus=1&transTime=1540944521000"
+
+//易x宝代付
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" -d "nids=$1&&planCode=" http://172.31.45.58:8080/yhb/api/2.0.0/finance/batchDf;
+
+
+curl  -i http://172.31.45.58:8080/yhb/api/2.0.0/finance/batchDf  -d 'nids=201809260001680230&planCode=&serviceCode=KOUDAI000001' -H 'content-uid:1' -H 'content-pwkey:1'
+
+//易花宝 更改手机号  接口
+curl  -i http://172.31.45.72:8080/yhb/api/2.0.0/custservice/modifyUsername  -d 'newMobile=13345072500&oldMobile=18846963362&merchantId=1' -H 'Content-uid:1' -H 'Content-pwkey:1'
+
+
+//现金白卡没生成nid
+
+curl -i 'http://172.31.45.62:8080/yhb/api/3.0.0/xjcard/approveFeedback' -d 'merchantId=2&order_sn=181003062075&approve_status=403' -H 'content-uid:1' -H 'content-pwkey:1'
+
+
+
+秒白条 ：
+
+select nid,count(1) from miaobt_borrow_df where status=1 group by nid having count(1)>1;
+
+//推送还款
+
+curl -i "http://app-013:9120/collection/api/1.0.0/job/pushRepayInfoToAicuishou" -d "nid=201808140010901201&forceFlag=1"  -H "content-uid: 1" -H "content-pwkey: 1"
+
+curl -i "http://app-013:9120/collection/api/1.0.0/job/pushRepayInfoToAicuishou" -d "nid=201808140010900502"  -H "content-uid: 1" -H "content-pwkey: 1"
+
+
+//更新
+
+curl -i "http://app-013:9120/collection/api/1.0.0/job/pushRepayInfoToAicuishou" -d "nid=201806130009595340"  -H "content-uid: 1" -H "content-pwkey: 1"
+
+select t.*,from_unixtime(add_time/1000) as time from miaobt_collection.miaobt_borrow_aicuishou_log t where nid='201809250011429620' and operate_type = 'REPAY';
+
+select *,from_unixtime(add_time/1000) as time from miaobt_collection.miaobt_aicuishou_repay_log where nid='201809250011429620'; 
+
+//还款广播（爱催收）
+curl -i -H 'content-uid:1' -H 'content-pwkey:1' http://app-015:9190/finance/api/1.0.0/mq/sendRepayNotifyMsg  -d  'billNo=201808141109589815628143&delinquentDays=1&isClear=1&nid=201807220010585287&repayAmount=0&repayChannel=EMPTY000003&repayTime=1534216340000&successCount=0&userId=4089040'
+
+
+//信审
+curl -i -H 'Content-uid:1' -H 'Content-pwkey:1' 'http://app-015:9100/approve/api/1.0.0/decisionEngine/getRobotScore?nid=201806210009850454';
+
+select * from miaobt_decision_admission_result where nid='201806210009850454';
+
+
+select * from miaobt_decision_robot_score_result where nid='201806210009850454';
+
+
+select nid from miaobt_approve.miaobt_borrow a where not exists (select 1 from miaobt_finance.miaobt_borrow  where a.nid=nid) and status=1 and verify_stage=4;
+
+select name,nid,biz_no,channel_code,pay_status,payment from miaobt_hub.miaobt_outflow_order where nid in (select nid from miaobt_approve.miaobt_borrow a where not exists (select 1 from miaobt_finance.miaobt_borrow  where a.nid=nid) and status=1 and verify_stage=4) and channel_code='CH000044';
+
+//实名认证
+curl -i -H 'content-uid:1' -H 'content-pwkey:1' http://app-proxy-credit-api.miaobt-internal.com:9084/credit/api/1.0.0/realname/realnameVerify -d 'idCard=350821199706140467&name=刘红&phone=18063765867';
+
+
+//放款未建账
+
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" -d "chName=刘国雄&contractAmount=1500.00&contractNo=201811010012133940_DF&idNumber=332526200004110318&idType=CER01&lendDate=20181101&loanAmount=1500.00&nid=201811010012133940&paProductId=36&periodId=0&periodNum=1&planCode=c28&productId=36&userId=5401128" "http://app-015:9190/finance/api/1.0.0/account/createAccount";
+
+
+select count(1) from miaobt_borrow_df a  where  status=1 and  not exists (select 1 from miaobt_loan_contract where nid=a.nid);
+
+
+curl -i -H"Content-uid:1" -H"Content-pwkey:1" "http://app-013:9120/collection/api/1.0.0/job/pushRepayInfoToAicuishou" -d "nid=201804260008705590&forceFlag=1";
+
+
+curl -i -H 'content-uid:1' -H 'content-pwkey:1' http://app-015:9190/finance/api/1.0.0/mq/sendRepayNotifyMsg  -d  'billNo=201807301043286889731130&delinquentDays=3&isClear=1&nid=201807060010315690&repayAmount=0&repayChannel=EMPTY000003&repayTime=1532918708000&successCount=0&userId=714197'
+
+
+/复制拼接miaobt_finance.miaobt_amq_producer_msg表中的msg_content字段
+curl -H"Content-uid:1" -H"Content-pwkey:1" -d "delinquentDays=114&repayAmount=2000.00&nid=201705040002595532&accountId=709719&userId=979693&billNo=201705040002595532_1&repayChannel=BAOFOO000002&isClear=0&repayTime=1505531185959" "http://app-001:8080/finance/api/1.0.0/mq/sendRepayNotifyMsg";
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" -d "delinquentDays=1&repayAmount=1000.00&nid=201805090008938515&userId=3241197&billNo=201805091050444161114821&repayChannel=BEIMIQIANBAO000001&isClear=1" "http://app-proxy-finance-api.miaobt-internal.com:9090/finance/api/1.0.0/mq/sendRepayNotifyMsg";
+
+
+//财务未进账
+
+curl -i  http://app-proxy-approve-api.miaobt-internal.com:9081/approve/api/1.0.0/mq/createFinanceBorrow -d 'nid=201811010012129669&serviceCode=BAOFOO000001_XH' -H 'content-uid:1' -H 'content-pwkey:1';
+
+
+//线下支付报告费销账 ******************************************
+//线下支付报告费销账。。。。。。。。。。。。。。。。。。。。。。
+
+curl -i http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/reportFeeRefund -d 'operationName=yuyong&bizNo=201810220017191246259646&userId=1984&remark=线下支付报告费销账&refundAmount=525.00&refundType=3'  -H 'content-uid:1' -H 'content-pwkey:1';
+
+
+//重复扣款
+
+select b.nid, b.amount, from_unixtime(b.add_time/1000, '%Y-%m-%d') as day,  count(1) from miaobt_loan_contract a, miaobt_user_repay_record b where a.nid = b.nid and b.amount>= a.capital and b.status = 1 and b.add_time > 1525104000000 and b.amount >= 1000 group by b.nid , b.amount, from_unixtime(b.add_time/1000, '%Y-%m-%d') having count(1) > 1;
+
+
+//那个开启的贝米定时缓存开启息 
+
+update  miaobt_finance.miaobt_third_service_cfg set value=1  where `key`='beimi.auto.setfkamount.flag';
+
+
+推分
+curl -H "Content-uid:1" -H "Content-pwkey:1" -d "nid=201810230011960678&status=1&prob_of_1=0.174&prob_of_0=0.83&scoreRate=B" http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/receiveCreditRateResult;
+
+//手机号认证
+curl -i 'http://app-proxy-credit-api.miaobt-internal.com:9084/credit/api/1.0.0/mobile/mobileVerify' -d 'name=向武广&idCard=422801199605202619&phone=18506212012'  -H "Content-uid:1" -H "Content-pwkey:1"
+
+//验证卡信息
+curl   -i "http://app-proxy-credit-api.miaobt-internal.com:9084/credit/api/1.0.0/bankcard/bankcardVerify"   -d "cardNo=6212264000037060718&name=刘明聪" -H "Content-uid:1" -H "Content-pwkey:1"
+
+
+//天下信用接口查询
+curl -i http://app-proxy-credit-api.miaobt-internal.com:9084/credit/api/1.0.0/data/creditreport/queryTianxiaPayStatus -d'bizNo=201810242305092613823357&name=黄燕春&idCard=36232319920208072X'
+
+//查询 服务费扣款情况
+
+select nid,trans_no,amount,repay_channel,status from miaobt_user_repay_record where status=0 and repay_date<'2018-05-10 14:00:00';
+
+//查询用户是否需要购买报告
+
+curl -i -H 'content-uid:1' -H 'content-pwkey:1' 'http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/selectCreditReportFeeInfo?userId=3916249'; 
+
+
+CALL proc_convert_succ_failed('201805290009281213');
+
+call proc_convert_succ_refuse('201804120008484215');
+
+
+//信用报告费减免接口
+curl -i -H 'content-uid:1' -H 'content-pwkey:1' 'http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/reportFeeRefund' -d 'userId=31&operationName=钱才&remark=线下销账扣除报告费&refundType=3&nid=201804220008643502&refundAmount=193.5' 
+
+
+//退还信用报告费
+
+curl -d "nid=201804020008332758&remark=信用报告费退还" "http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/outfolwRefuseFk" -i
+
+
+//老哥帮查询接口
+curl -d "bizNo=20180620192601628560560&merchantNo=miaobt" "http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/findRefundStatus" -i
+
+//老哥帮支付接口
+curl -d "bizNo=201806202106444038733800&merchantNo=miaobt"  "http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/lgbRefund" -i
+
+//查询老哥帮倒流的单子在财务（信审）的status
+
+select a.name,a.nid,a.status 财务状态,b.biz_no,b.pay_status,from_unixtime(b.add_time/1000)add_time from  miaobt_borrow a ,miaobt_hub.miaobt_outflow_order b where a.nid=b.nid and a.nid='201803200008153605';
+
+select nid,status from miaobt_finance.miaobt_borrow where nid in (select nid from miaobt_hub.miaobt_outflow_order where biz_no in ('201803151247587946962296', '201803151248468316410295', '201803151338276255414144'));
+
+
+//查询用户信用报告支付情况
+
+select nid,biz_no,pay_status,payment,user_id,channel_code,status,grade,from_unixtime(add_time/1000) from miaobt_hub.miaobt_outflow_order where phone='13736059125';
+
+
+
+curl -i  http://localhost:9220/pay/api/1.0.0/mq/payCallBackProducer -d 'acceptStatus=1&billNo=20180428130212848123323&repayTime=1524891762536&transId=201804281302121031610123955143&transStatus=1&serviceCode=UCFPAY000001_QJ';
+
+
+curl -i http://app-proxy-credit-api.miaobt-internal.com:9084/credit/api/1.0.0/data/creditreport/queryTianxiaPayStatus -d'bizNo=201807060900567791039582&name=万延松&idCard=413026199001166357'
+
+贝米后台查询
+
+18317090970    toT=8robnMejF    https://loan-up.bmqb.com/#/login
+
+//放款渠道配置
+
+select * from miaobt_hub.miaobt_outflow_channel_router;
+
+关闭贝米
+curl -i http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/updateOutflowRouterChannel?productInfo=1,50,28,0-2,100,28:29,1  -H 'content-uid:1' -H 'content-pwkey:1';
+
+开启贝米
+curl -i http://app-proxy-hub-api.miaobt-internal.com:9091/hub/api/1.0.0/outflow/updateOutflowRouterChannel?productInfo=1,100,28,1-2,50,29,1  -H 'content-uid:1' -H 'content-pwkey:1';
+
+
+//查询代付失败用户的开户卡
+select a.nid,a.name,a.phone,a.card_no,a.card_bank_name,from_unixtime(a.add_time/1000)add_time,b.bank_name,b.card_no ,b.msg from miaobt_finance.miaobt_borrow a ,miaobt_finance.miaobt_capital_user b where a.phone=b.mobile and a.status=7 and b.status=1 order by a.id ; 
+
+
+select a.nid,a.biz_no,a.status,b.status,a.name ,a.id_card,a.phone from miaobt_hub.miaobt_outflow_order a ,miaobt_finance.miaobt_borrow b where a.nid=b.nid and a.nid=(select nid FROM miaobt_finance.miaobt_borrow where phone='13164154311');
+
+
+select count(1) from miaobt_error_records where status=0 and type='createAccount';
+
+
+select a.nid,a.name from miaobt_approve.miaobt_borrow a where a.status=1 and not exists (select 1 from miaobt_borrow where nid=a.nid ) ;
+
+
+
+//修改卡号查询
+
+select card_no_modify from miaobt_finance.miaobt_borrow_df where nid = '201803140008078731';
+card_no_modify=1表示修改过
+ 
+ 
+ 综合评分不足原因：
+ 
+ *****老歌帮在途订单*****
+ 
+idCard approve表里面的cardNo
+
+select card_no,nid,status from miaobt_approve.miaobt_borrow where phone = '15193194010';查询银行卡号
+
+curl -X POST -H "Content-uid: 1" -H "Content-pwkey: 1" "http://app-proxy-credit-api.miaobt-internal.com:9084/credit/api/1.0.0/loan/hasNoClean?phone=15630268538&idCard=6236681460007698661";
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+1、查询用户的身份证
+
+select card_id,user_id from miaobt_cust.miaobt_user_realname where user_id =(select user_id from miaobt_approve.miaobt_borrow where phone='15181595869' order by id desc limit 1);
+
+2、查询开户
+
+curl "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/kongzhongjr/queryAccount?idCard=452729199405041423" -H 'Content-type:1' -H 'Content-pwkey:1'
+
+
+//查询信审被拒原因
+select name '拒绝原因' from miaobt_approve.miaobt_reject_reason where code =(select reason_code from miaobt_approve.miaobt_borrow_reject_reasons where nid='');
+
+
+//秒下款项目放款成功单子
+
+ select FROM_UNIXTIME(a.add_time/1000,'%Y%m%d'), borrow_days '借款天数' ,count(0) '放款成功笔数',sum(b.amount) '放款成功金额'  from miaobt_finance.miaobt_borrow_df a,miaobt_finance.miaobt_borrow b where a.nid=b.nid and a.status in (0,1) and a.add_time>=unix_timestamp('2018-03-07')*1000  and a.add_time<unix_timestamp('2018-03-08')*1000 and a.service_code='KONGZHONGJR000001' and b.product_id=28 group by FROM_UNIXTIME(a.add_time/1000,'%Y%m%d');
+
+//查询放款成功笔数+申请笔数
+
+
+select count(*) '申请笔数',sum(amount) '申请金额',product_id '产品编码',borrow_days '借款天数' from miaobt_approve.miaobt_borrow where FROM_UNIXTIME(add_time/1000,'%Y%m%d')='20180307' group by product_id;
+
+
+//空中金融 放款失败又告知成功操作步骤如下
+
+update  miaobt_finance.miaobt_borrow_df set status=0  where bill_no='201801301341159662987572';
+
+update miaobt_finance.miaobt_borrow set status=5  where nid='201801300007772630';
+
+//修改后要发mq消息
+curl -H"Content-uid:1" -H"Content-pwkey:1" "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer" -d "msg=2018.02.1空中金融放款失败有告知放款成功&serviceCode=KONGZHONGJR000001&transStatus=1&acceptStatus=1&billNo=201803161025018361113129&transTime=1521167101836";
+
+****查客户的开户卡******
+
+select name,user_id ,phone ,card_no,card_bank_name from miaobt_borrow where nid='201803280008254741';  
+
+select name,user_id ,phone ,card_no,card_bank_name from miaobt_finance.miaobt_borrow where nid=(select nid from miaobt_finance.miaobt_borrow where phone='15294561157' order by id desc limit 1);
+
+select name ,mobile,card_no,bank_name, capital_account_no ,status,msg from miaobt_finance.miaobt_capital_user  where  user_id='3780563';
+
+
+*********手动放款**********
+ 
+curl -i http://app-proxy-finance-api.miaobt-internal.com:9090/finance/api/1.0.0/borrow/batchDf -d 'nids=201806280010074587&planCode=&serviceCode=BEIMIQIANBAO000001' -H 'content-uid:1' -H 'content-pwkey:1'
+
+curl -i http://app-proxy-finance-api.miaobt-internal.com:9090/finance/api/1.0.0/borrow/batchDf -d 'nids=201806290010105153&planCode=&serviceCode=KONGZHONGJR000001' -H 'content-uid:1' -H 'content-pwkey:1'
+
+curl -i http://app-proxy-finance-api.miaobt-internal.com:9090/finance/api/1.0.0/borrow/batchDf -d 'nids=201810080011662276&planCode=&serviceCode=BAOFOO000001_XH' -H 'content-uid:1' -H 'content-pwkey:1'
+
+curl -i http://app-proxy-finance-api.miaobt-internal.com:9090/finance/api/1.0.0/borrow/batchDf -d 'nids=201811060012236174&planCode=&serviceCode=KOUDAI000001' -H 'content-uid:1' -H 'content-pwkey:1'
+
+
+************************查询放款总量
+select sum(amount) from miaobt_borrow_df where service_code='BEIMIQIANBAO000001' and status=1 and add_time>unix_timestamp('2018-06-28')*1000;
+select sum(amount) from miaobt_borrow_df where service_code='BAOFOO000001_XH' and status=1 and add_time>unix_timestamp('2018-9-25')*1000;
+select sum(amount) from miaobt_borrow_df where service_code='KOUDAI000001' and status=1 and add_time>unix_timestamp('2018-11-11')*1000;
+
+
+**********代付处理中置为失败（transTime替换为df表的addTime）***********
+
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer" -d "msg=2018.07.08空中查询资产不存在&serviceCode=KONGZHONGJR000001&transStatus=2&acceptStatus=2&billNo=201807081014174044445253&transTime=1531017458279";
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" -i  'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer' -d 'billNo=201806261326104754885346&acceptStatus=1&amount=2000.00&msg=发送贝米失败&orgCode=CH0036&serviceCode=BEIMIQIANBAO000001&transId=&cardNo=6217560800005862460&transStatus=2'
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" -i  'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer' -d 'billNo=201806281037269553281289&acceptStatus=1&msg=2018.06.28查询数据不存在&orgCode=CH0036&serviceCode=BEIMIQIANBAO000001&transId=&transStatus=2&transTime=1530153446955'
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" -i  'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer' -d 'billNo=201810270730431894461922&acceptStatus=1&msg=2018.10.27咨询无记录&orgCode=CH0037&serviceCode=BAOFOO000001_XH&transId=&transStatus=2&transTime=1540596643189'
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" -i  'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer' -d 'billNo=201808131513056374514952&acceptStatus=1&msg=老户减免券自动还款&orgCode=&serviceCode=EMPTY000005&transId=&transStatus=2&transTime=1531116540646'
+
+curl -H"Content-uid:1" -H"Content-pwkey:1" -i  'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer' -d 'billNo=201810051719196406312081&acceptStatus=1&msg=2018.10.12查询无记录&orgCode=&serviceCode=CHANGPAY000005&transId=&transStatus=2&transTime=1538731159710'
+
+
+//贝米查询接口*************
+
+curl -i "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/bmqb/dfOrderQuery?billNo=201806261224515181538541&sendMq=1"
+
+//  空中金融订单查询接口*********************   ^[^\d]*(\d+)[^\d]*$
+
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/kongzhongjr/queryAsset?billNo=201804122023459176780665' -H "Content-uid:1" -H "Content-pwkey:1"      
+
+//mq消息
+curl -i 'http://app-015:9220/pay/api/1.0.0/kongzhongjr/dfOrderQuery?billNo=201807121347507499992226&sendMq=1' -H "Content-uid:1" -H "Content-pwkey:1"
+
+
+//查询所有代收处理中订单
+select id,nid,amount,repay_channel,trans_no,card_no,repay_date,status from miaobt_finance.miaobt_user_repay_record where status='0';
+select merchant_id,nid,amount,repay_channel,trans_no,card_no,repay_date,status from yhb_user_repay_record where status='0';
+
+//查询所有代付处理中订单
+select bill_no,amount,service_code,status,nid,resp_msg,FROM_UNIXTIME(add_time/1000,'%Y%m%d %H:%i:%s') add_time,add_time from miaobt_finance.miaobt_borrow_df where status='0' order by add_time desc;
+
+select bill_no,amount,service_code,status,nid,resp_msg,FROM_UNIXTIME(add_time/1000,'%Y%m%d %H:%i:%s') add_time,add_time from yhb_borrow_df where status='0' order by add_time desc;
+
+//查询可以放款的新产品单子
+select nid from miaobt_approve.miaobt_borrow where verify_stage=4 and status = 0 and product_id in (20,21,22,23,24) and product_version='3.1.0';
+注意：product_version这个条件 空中金融只有3.1.0的对应产品才可以走，博能和考拉没有限制
+
+
+select sum(amount),count(1) from miaobt_borrow where status=0 and verify_stage=4 and nid in (select a.nid  from miaobt_borrow a left join miaobt_decision_robot_result b on a.nid = b.nid where a.product_id = 25 and b.add_time >= unix_timestamp('2017-12-15 18:00:00')*1000 and b.result=4 and a.amount=1000) and product_id =25;
+
+******计算21天，30天，90天的平均值**************
+
+select borrow_days,count(0)/20 from miaobt_finance.miaobt_borrow_df a,miaobt_finance.miaobt_borrow b where a.nid=b.nid and a.status=1 and a.add_time>=unix_timestamp(date_add(curdate(),INTERVAL -19 DAY))*1000  and a.add_time< unix_timestamp('2018-02-07')*1000 and a.service_code='KONGZHONGJR000001' group by borrow_days;
+
+
+select borrow_days "借款天数",sum(b.amount) "放款金额", count(0) "放款笔数" from miaobt_finance.miaobt_borrow_df a ,miaobt_finance.miaobt_borrow b where a.nid=b.nid and a.status=1 and a.add_time>=unix_timestamp('2018-9-29')*1000  and a.add_time<unix_timestamp('2018-10-07')*1000 and a.service_code='BAOFOO000001_XH' group by borrow_days ;
+
+
+
+//检查客户是否过模型，result=4 代表通过模型
+
+select * from miaobt_decision_robot_result where nid='201801260007752624' and result=4;
+ 
+select nid,status,product_id,name,phone,id_card, from_unixtime(add_time/1000)add_time from miaobt_finance.miaobt_borrow where status not in (9,10,11) order by status;
+
+
+//查询所有代收处理中订单
+
+select id,nid,amount,repay_channel,trans_no,card_no,repay_date,status from miaobt_finance.miaobt_user_repay_record where status='0';
+
+//查询所有代付处理中订单
+
+select bill_no,amount,service_code,status,nid,resp_msg,FROM_UNIXTIME(add_time/1000,'%Y%m%d %H:%i:%s') add_time,add_time from miaobt_finance.miaobt_borrow_df where status='0' order by add_time desc;
+ 
+select merchant_id,bill_no,amount,service_code,status,nid,resp_msg,FROM_UNIXTIME(add_time/1000,'%Y%m%d %H:%i:%s') add_time,add_time from yhb_borrow_df where status='0' order by add_time desc;
+
+---------------------------------------------------------------------------------------------------------------------------------
+ 
+时间:SELECT FROM_UNIXTIME(1513069294548/1000,'%Y%m%d %H:%i:%s');
+
+查用户额度为0的原因
+curl -i -H 'Content-uid:1' -H 'Content-pwkey:1' 'http://app-003:9100/approve/api/1.0.0/loan/getUserAmount?userId=3864916'
+
+***************催收mq**********
+curl -i -H 'content-uid:1' -H 'content-pwkey:1' http://app-015:9220/finance/api/1.0.0/mq/sendRepayNotifyMsg  -d  'billNo=aic201805022974&delinquentDays=1&isClear=0&nid=201804090008431977&repayAmount=2044.00&repayChannel=QJKJTPAY000003&repayTime=1525234466000'
+
+
+展期多扣将多扣挪至新订单：
+curl -H"Content-uid:1" -H"Content-pwkey:1" -i  'http://app-proxy-finance-api.miaobt-internal.com:9090/finance/api/1.0.0/extendBorrow/oldRepayNewCapital' -d 'oldNid=201711250007088456&newNid=201712120007414336&userRepayRecordId=4430167'
+
+
+这个是查询绑卡是否成功
+SELECT * FROM `miaobt_third_bankcard_verify_log` WHERE `card_no` = '6228480838307361876' AND `name` = '梁华伟' AND `id_card` = '450121199807124832' LIMIT 0, 1000;
+
+
+备注：溢美支付宝异常设为失败
+curl -i  http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/payCallBackProducer -d 'billNo=201711170000732054&acceptStatus=2&amount=1551.18&msg=溢美支付宝支付异常 置为失败&transId=201711170000732054&cardNo=&transStatus=2&transTime=1510900726612'
+201711180006970545
+
+
+
+#终审审核通过
+curl http://app-proxy-approve-api.miaobt-internal.com:9081/approve/api/1.0.0/loan/thirdAudit -H"Content-uid:1" -H"Content-pwkey:1" -d "nid=201711110006849219&verifyStatus=1&verifyRemark=系统批量处理";
+
+#去财务系统放款
+
+#查询用户当前放款状态
+select * from miaobt_finance.miaobt_borrow_df where nid='201711100006831539';
+
+
+---------------------------------------------------------------------------------------------------------------------------------
+查看财务系统自动放款标志
+1):select * from miaobt_finance.miaobt_system_cfg limit 1;
+
+----------------------------------------------------------------------------------------------------------------------------------
+运营商采集查询
+1):查询用户运营商认证渠道
+SELECT * FROM miaobt_credit.miaobt_mobile_operator_process WHERE mobile = '17839729366' ORDER BY id DESC LIMIT 5;
+SELECT * FROM miaobt_credit.miaobt_mobile_operator_process WHERE mobile = '18508207653' ORDER BY id DESC;
+
+2):根据渠道查询相关日志表
+//hulu
+select * from miaobt_credit.miaobt_mobile_operator_request_log where mobile='17839729366' order by id desc limit 10;
+//shangshu
+select * from miaobt_credit.miaobt_mobile_shangshu_request_log where mobile='15202000510'order by id desc limit 10;
+//tongdun
+select * from miaobt_credit.miaobt_mobile_tongdun_request_log where mobile='17733743651' order by id desc limit 10;
+//wecash
+select * from miaobt_credit.miaobt_mobile_wecash_request_log where mobile='18785569450';
+//knight
+select * from miaobt_credit.miaobt_mobile_knight_request_log where mobile='18795006466';
+
+3):实名认证失败处理
+1、先在miaobt_mobile_operator_process表中确认用户最新认证的渠道。
+2、再去juxinli_log数据库中相关渠道的数据表中查询最新的数据，看是否和我们这边认证的姓名身份证号匹配；
+3、如果匹配的话就帮用户把juxinli库中的mobile_report表中最新数据修改了。
+
+db.mobile_report.find({'phone':'18250896992'},{'report_data.data_source.reliability':1,'timestamp':1,'source':1})
+db.mobile_report.update({'_id':ObjectId("最新数据的_id"),'report_data.data_source.reliability':'未实名认证/未知'},{$set:{'report_data.data_source.$.reliability':'实名认证'}});
+
+---------------------------------------------------------------------------------------------------------------------------------
+代收代付订单状态查询
+
+1)：手机号查询代付状态
+select * from miaobt_finance.miaobt_borrow_df where nid=(select nid from miaobt_finance.miaobt_borrow where phone='13915063275' order by id desc limit 1); 
+
+2)：手机号查询代收状态（还款记录表查询）
+select * from miaobt_finance.miaobt_user_repay_record where nid=(select nid from miaobt_finance.miaobt_borrow where phone='18077967100' order by id desc limit 1);
+
+3)：查询代付订单状态
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/baofoo/dfOrderQuery?billNo=201710181017594807586932' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/kjtpay/dfOrderQuery?billNo=201710101852492059833962' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/boneng/dfOrderQuery?billNo=201710302056224737830858' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/unspay/dfOrderQuery?billNo=201708161348259443431904' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/kaolalc/dfOrderQuery?billNo=201710211113489429961412' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/ucfpay/dfDepOrderQuery?billNo=201803121756482418323173' -H "Content-uid:1" -H "Content-pwkey:1"
+
+4)：查询代收订单状态
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/baofoo/dsOrderQuery?billNo=201711132017440000667761' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/kjtpay/dsOrderQuery?billNo=201711132017440000667761' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/boneng/dsOrderQuery?billNo=201711141011511469641175' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/unspay/dsOrderQuery?billNo=20170505174904144937425' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/ebj/alipayOrderQuery?billNo=201710270000499530' -H 'content-uid:1' -H 'content-pwkey:1'
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/ucfpay/dsOrderQuery?billNo=201805221443275172187960' -H 'content-uid:1' -H 'content-pwkey:1'
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/qifa/dsOrderQuery?billNo=2201710190000421055' -H "Content-uid:1" -H "Content-pwkey:1"   旗发快捷通
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/yeepay/dsOrderQuery?billNo=201711300000881119' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/kaolalc/deductOrderQuery?billNo=201711200657113049168987' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/helipay/dsOrderQuery?billNo=201710310000539586' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/qjhelipay/dsOrderQuery?billNo=201711111359151131543955' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/qianjiaoyeepay/dsOrderQuery?billNo=20180724165401163416869' -H "Content-uid:1" -H "Content-pwkey:1"  
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/yimpay/dsOrderQuery?billNo=201711170000732054' -H "Content-uid:1" -H "Content-pwkey:1"  
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/qjkjtpay/dsOrderQuery?billNo=aic20180813342501135982222&sendMq=1' -H "Content-uid:1" -H "Content-pwkey:1"
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/qianjiaoUcfpay/kjDsOrderQuery?billNo=YXB201810091536221414941218&sendMq=1' -H "Content-uid:1" -H "Content-pwkey:1"
+
+5)：查询所有代收处理中订单
+select id,nid,amount,repay_channel,trans_no,card_no,repay_date,status from miaobt_finance.miaobt_user_repay_record where status='0';
+
+6)：查询所有代付处理中订单
+select bill_no,amount,service_code,status,nid,resp_msg,FROM_UNIXTIME(add_time/1000,'%Y%m%d %H:%i:%s') add_time,add_time from miaobt_finance.miaobt_borrow_df where status='0' order by add_time desc;
+
+7):代付处理中置为失败（transTime替换为df表的addTime）
+curl -H"Content-uid:1" -H"Content-pwkey:1" "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer" -d "msg=经财务核查，快捷通无此订单，故置为失败&serviceCode=KJTPAY000001&transStatus=2&acceptStatus=2&billNo=201709161517486153966380&transTime=1505546268615";
+curl -H"Content-uid:1" -H"Content-pwkey:1" "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer" -d "msg=经财务核查，博能小贷-快捷通无此订单，故置为失败&serviceCode=BONENG000001&transStatus=2&acceptStatus=2&billNo=201710132048272904546425&transTime=1507898907290";
+curl -H"Content-uid:1" -H"Content-pwkey:1" "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer" -d "msg=考拉理财查询失败，故置为失败&serviceCode=KAOLALC000001&transStatus=2&acceptStatus=2&billNo=201709261422336287471578&transTime=1506406953628";
+curl -H"Content-uid:1" -H"Content-pwkey:1" "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer" -d "msg=考拉理财存管查询失败，故置为失败&serviceCode=KAOLALC000001_1&transStatus=2&acceptStatus=2&billNo=20170925125443202766073&transTime=1506315283021";
+curl -H"Content-uid:1" -H"Content-pwkey:1" "http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/dfPayCallBackProducer" -d "msg=考拉理财存管查询失败，故置为失败&serviceCode=KAOLALC000001_2&transStatus=2&acceptStatus=2&billNo=201710271045401963109384&transTime=1509072340196";
+
+8:)代扣结果通知mq消息
+curl -i  http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/payCallBackProducer -d 'billNo=201710050000282617&acceptStatus=1&amount=1058.71&msg=支付宝查询异常 重新置为成功&transId=201710051221136322890899&cardNo=&transStatus=1&transTime=1507176424801'
+
+curl -i  http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/payCallBackProducer -d 'billNo=201809151133093781549405&acceptStatus=1&amount=2529.17&msg=千骄宝付代扣成功&transStatus=1'
+
+curl -i http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/payCallBackProducer -d 'acceptStatus=1&billNo=YXB201810010957193289935135&repayTime=1538359039000&msg=先锋代扣成功&transStatus=1&serviceCode=UCFPAY000001_XY';
+
+curl -i http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/mq/payCallBackProducer -d 'acceptStatus=2&billNo=201809191912423231277993&repayTime=1537355562000&msg=合利宝代扣失败&transStatus=2&serviceCode=HELIPAY000001_YXB';
+
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 
+*******催收系统未销账问题**********
+
+SELECT b.delinquent_days,a.amount-a.user_fee amount,a.nid,a.account_id,a.user_id,a.trans_no,a.repay_channel,a.is_clear,UNIX_TIMESTAMP(a.repay_date)*1000 FROM miaobt_finance.miaobt_user_repay_record a,miaobt_finance.miaobt_loan_contract b WHERE a.nid=b.nid AND a.status=1
+AND b.account_status = 3 AND b.nid IN (SELECT nid FROM miaobt_collection.miaobt_borrow WHERE STATUS IN (0,3));
+//复制拼接miaobt_finance.miaobt_amq_producer_msg表中的msg_content字段
+curl -H"Content-uid:1" -H"Content-pwkey:1" -d "delinquentDays=114&repayAmount=2000.00&nid=201705040002595532&accountId=709719&userId=979693&billNo=201705040002595532_1&repayChannel=BAOFOO000002&isClear=0&repayTime=1505531185959" "http://app-001:8080/finance/api/1.0.0/mq/sendRepayNotifyMsg";
+curl -H"Content-uid:1" -H"Content-pwkey:1" -d "delinquentDays=1&repayAmount=1000.00&nid=201805090008938515&userId=3241197&billNo=201805091050444161114821&repayChannel=BEIMIQIANBAO000001&isClear=1" "http://app-proxy-finance-api.miaobt-internal.com:9090/finance/api/1.0.0/mq/sendRepayNotifyMsg";
+
+//终审审核通过
+curl http://app-proxy-approve-api.miaobt-internal.com:9081/approve/api/1.0.0/loan/thirdAudit -H"Content-uid:1" -H"Content-pwkey:1" -d "nid=201810130011759958&verifyStatus=1&verifyFlag=1&verifyRemark=系统批量处理";
+
+
+
+//查看空中金融放款量
+
+select borrow_days,sum(b.amount),count(0) from miaobt_finance.miaobt_borrow_df a,miaobt_finance.miaobt_borrow b where a.nid=b.nid and a.status in (0,1) and a.add_time>=unix_timestamp('2018-4-16')*1000  and a.add_time<unix_timestamp('2018-4-17')*1000 and a.service_code='KONGZHONGJR000001' group by borrow_days;
+
+//初审拒绝
+curl -H"Content-uid:1" -H"Content-pwkey:1" -d "verifyUserRole=0&verifyUserId=1&verifyFlag=1&nid=201811020012152850&verifyUserName=Engine&verifyStatus=2&rejectReason=210" http://app-015:9100/approve/api/1.0.0/loan/firstAudit;
+//终审拒绝
+curl -H"Content-uid:1" -H"Content-pwkey:1" -d "verifyUserRole=0&verifyUserId=1&verifyStatus=2&verifyFlag=1&nid=201811090012296951&verifyUserName=Engine&rejectReason=208" http://app-013:9100/approve/api/1.0.0/loan/thirdAudit;
+	  
+
+//发短信通知用户来开户
+curl -H 'Content-uid:1' -H 'Conteny-pwkey:1' "http://10.50.50.129:9308/messagecenter/api/1.0.0/message/send" -d "nid=openAccountRemind&phone=18321788695&sendType=sms" -i
+
+curl -i 'http://app-proxy-pay-api.miaobt-internal.com:9093/pay/api/1.0.0/repay/deduct' -d 'billNo=yangyanlong1000018&cardNo=6216608100001232867&phone=18335644519&name=杨彦龙&idCard=140525198906030532&amount=1447.50&serviceCode=HELIPAY000003_QJ'
