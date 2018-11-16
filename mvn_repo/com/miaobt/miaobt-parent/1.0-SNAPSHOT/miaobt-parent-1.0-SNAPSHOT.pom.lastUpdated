@@ -1,0 +1,4 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Sat Dec 09 15:24:03 CST 2017
+http\://ci\:8081/nexus/content/repositories/snapshots/.error=Could not transfer artifact com.miaobt\:miaobt-parent\:pom\:1.0-SNAPSHOT from/to nexus-snapshots (http\://ci\:8081/nexus/content/repositories/snapshots)\: ci
+@default-nexus-snapshots-http\://ci\:8081/nexus/content/repositories/snapshots/.lastUpdated=1512804243916

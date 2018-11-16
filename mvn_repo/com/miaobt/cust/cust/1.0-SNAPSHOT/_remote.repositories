@@ -1,0 +1,5 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue May 29 10:18:58 CST 2018
+cust-1.0-SNAPSHOT.pom>=
+cust-1.0-SNAPSHOT-sources.jar>=
+cust-1.0-SNAPSHOT.war>=
